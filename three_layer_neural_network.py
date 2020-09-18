@@ -90,9 +90,9 @@ class NeuralNetwork(object):
         '''
 
         if (type == 'sigmoid'):
-            return (1/(1 + np.exp(-z))) * (1 - 1/(1 + np.exp(-z))) # element-wise multiply
+            return z * (1 - z) # element-wise multiply
         elif (type == "tanh"):
-            return 1 - np.square(np.tanh(z)) # element wise square
+            return 1 - np.square(z) # element wise square
         elif (type == "relu"):
             z[z > 0] = 1
             z[z <= 0] = 0
@@ -107,11 +107,10 @@ class NeuralNetwork(object):
         :param actFun: activation function
         :return:
         '''
-        self.z1 = self.W1.T.dot(X.T) + np.tile(self.b1.T, (1, X.shape[0]))
-        self.a1 = actFun(self.z1)
-        self.z2 = self.W2.T.dot(self.a1) + np.tile(self.b2.T, (1, X.shape[0]))
-        self.a2 = actFun(self.z2)
-        self.probs = np.exp(self.a2) / np.sum(np.exp(self.a2)) # compute softmax
+        self.z1 = X.dot(self.W1) + self.b1 # compute raw activations of hidden layer
+        self.a1 = actFun(self.z1)  # apply activation function to hidden layer
+        self.z2 = self.a1.dot(self.W2) + self.b2 # compute raw activations of output layer
+        self.probs = np.exp(self.z2) / np.sum(np.exp(self.z2), axis=1, keepdims=True) # compute softmax of output layer
         return None
 
     def calculate_loss(self, X, y):
@@ -128,7 +127,7 @@ class NeuralNetwork(object):
         labels[:, 0] = y == 0
         labels[:, 1] = y == 1
         # Calculating the loss
-        data_loss = (-1/X.shape[0]) * np.sum(np.log(self.probs.T + 1e-8) * labels).astype(float)
+        data_loss = (-1/X.shape[0]) * np.sum(np.log(self.probs + 1e-8) * labels).astype(float)
         # Add regulatization term to loss (optional)
         # data_loss += self.reg_lambda / 2 * (np.sum(np.square(self.W1)) + np.sum(np.square(self.W2)))
         return data_loss
@@ -141,7 +140,7 @@ class NeuralNetwork(object):
         :return: label inferred
         '''
         self.feedforward(X, lambda x: self.actFun(x, type=self.actFun_type))
-        return np.argmax(self.probs, axis=0)
+        return np.argmax(self.probs, axis=1)
 
     def backprop(self, X, y):
         '''
@@ -156,16 +155,13 @@ class NeuralNetwork(object):
         labels[:, 1] = y == 1
 
         # IMPLEMENT YOUR BACKPROP HERE
-        # derivitative wrt self.probs
-        dprobs = -(1/X.shape[0]) * labels / self.probs
-
-        dZ2 = 1/X.shape[0] * (self.probs - labels.T)
-        dW2 = dZ2.dot(self.a1.T).T / X.shape[0]
-        db2 = np.sum(dZ2, axis=1) / X.shape[0]
-        da1 = self.W2.dot(dZ2)
-        dZ1 =  da1 * self.diff_actFun(da1, 'sigmoid')
-        dW1 = dZ1.dot(X).T / X.shape[0]
-        db1 = np.sum(dZ1, axis=1) / X.shape[0]
+        dZ2 = (self.probs - labels)
+        dW2 = self.a1.T.dot(dZ2)
+        db2 = np.sum(dZ2, axis=0, keepdims=True)
+        da1 = dZ2.dot(self.W2.T)
+        dZ1 = self.diff_actFun(self.a1, type=self.actFun_type) * da1
+        dW1 = X.T.dot(dZ1)
+        db1 = np.sum(dZ1, axis=0)
         return dW1, dW2, db1, db2
 
     def fit_model(self, X, y, epsilon=0.01, num_passes=20000, print_loss=True):
@@ -214,7 +210,7 @@ def main():
     # plt.scatter(X[:, 0], X[:, 1], s=40, c=y, cmap=plt.cm.Spectral)
     # plt.show()
 
-    model = NeuralNetwork(nn_input_dim=2, nn_hidden_dim=3 , nn_output_dim=2, actFun_type='sigmoid')
+    model = NeuralNetwork(nn_input_dim=2, nn_hidden_dim=3 , nn_output_dim=2, actFun_type='relu')
     # model.calculate_loss(X,y)
     model.fit_model(X,y)
     model.visualize_decision_boundary(X,y)
