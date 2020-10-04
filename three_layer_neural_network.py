@@ -2,6 +2,7 @@ __author__ = 'sai_sriram'
 import numpy as np
 from sklearn import datasets, linear_model
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 def generate_data():
     '''
@@ -30,8 +31,8 @@ def plot_decision_boundary(pred_func, X, y):
     Z = pred_func(np.c_[xx.ravel(), yy.ravel()])
     Z = Z.reshape(xx.shape)
     # Plot the contour and training examples
-    plt.contourf(xx, yy, Z, cmap=plt.cm.Spectral)
-    plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
+    plt.contourf(xx, yy, Z, cmap=cm.get_cmap("Spectral"))
+    plt.scatter(X[:, 0], X[:, 1], c=y, cmap=cm.get_cmap("Spectral"))
     plt.show()
 
 ########################################################################################################################
@@ -157,7 +158,7 @@ class NeuralNetwork(object):
         # IMPLEMENT YOUR BACKPROP HERE
         dZ2 = (self.probs - labels)
         dW2 = self.a1.T.dot(dZ2)
-        db2 = np.sum(dZ2, axis=0, keepdims=True)
+        db2 = np.sum(dZ2, axis=0)
         da1 = dZ2.dot(self.W2.T)
         dZ1 = self.diff_actFun(self.a1, type=self.actFun_type) * da1
         dW1 = X.T.dot(dZ1)
@@ -211,7 +212,6 @@ def main():
     # plt.show()
 
     model = NeuralNetwork(nn_input_dim=2, nn_hidden_dim=3 , nn_output_dim=2, actFun_type='tanh')
-    # model.calculate_loss(X,y)
     model.fit_model(X,y)
     model.visualize_decision_boundary(X,y)
 
