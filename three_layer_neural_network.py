@@ -1,4 +1,4 @@
-__author__ = 'tan_nguyen'
+__author__ = 'sai_sriram'
 import numpy as np
 from sklearn import datasets, linear_model
 import matplotlib.pyplot as plt
@@ -127,10 +127,10 @@ class NeuralNetwork(object):
         labels[:, 0] = y == 0
         labels[:, 1] = y == 1
         # Calculating the loss
-        data_loss = (-1/X.shape[0]) * np.sum(np.log(self.probs + 1e-8) * labels).astype(float)
+        data_loss = np.sum(np.log(self.probs + 1e-8) * labels).astype(float)
         # Add regulatization term to loss (optional)
-        # data_loss += self.reg_lambda / 2 * (np.sum(np.square(self.W1)) + np.sum(np.square(self.W2)))
-        return data_loss
+        data_loss += self.reg_lambda / 2 * (np.sum(np.square(self.W1)) + np.sum(np.square(self.W2)))
+        return (-1/X.shape[0]) * data_loss
 
 
     def predict(self, X):
@@ -210,7 +210,7 @@ def main():
     # plt.scatter(X[:, 0], X[:, 1], s=40, c=y, cmap=plt.cm.Spectral)
     # plt.show()
 
-    model = NeuralNetwork(nn_input_dim=2, nn_hidden_dim=3 , nn_output_dim=2, actFun_type='relu')
+    model = NeuralNetwork(nn_input_dim=2, nn_hidden_dim=3 , nn_output_dim=2, actFun_type='tanh')
     # model.calculate_loss(X,y)
     model.fit_model(X,y)
     model.visualize_decision_boundary(X,y)
